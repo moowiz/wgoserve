@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/moowiz/gowasmfresh"
+	"github.com/moowiz/wgoserve"
 )
 
 var (
@@ -30,18 +30,31 @@ func main() {
 	flag.Parse()
 	log.Printf("listening on %q...", *listen)
 	if len(os.Args) == 1 {
-		fmt.Fprintf(os.Stderr, "usage: %s <directory> [flags to go build]\nFlags default are \"-o out.wasm\"", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "usage: %s <directory> [flags to go build]\nFlags default are \"-o <directory>/out.wasm\"", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
 	mainTarget := os.Args[1]
+	var err error
+	mainTarget, err = filepath.Abs(mainTarget)
+	if err != nil {
+		panic(fmt.Errorf("%v can't be coerced to an absolute path", mainTarget))
+	}
+
 	var flags []string
 	if len(os.Args) > 2 {
 		flags = os.Args[2:]
 	} else {
-		flags = []string{"-o", "out.wasm"}
+		info, err := os.Stat(mainTarget)
+		if err != nil {
+			panic(err)
+		}
+		if !info.IsDir() {
+			mainTarget = filepath.Dir(mainTarget)
+		}
+		flags = []string{"-o", filepath.Join(mainTarget, "out.wasm")}
 	}
-	http.HandleFunc("/version", gowasmfresh.KeepFresh(mainTarget, flags))
+	http.HandleFunc("/version", wgoserve.KeepFresh(mainTarget, flags))
 	http.HandleFunc("/", serveFiles)
 	log.Fatal(http.ListenAndServe(*listen, nil))
 }

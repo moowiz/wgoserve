@@ -1,4 +1,4 @@
-package gowasmfresh
+package wgoserve
 
 import (
 	"crypto/sha1"

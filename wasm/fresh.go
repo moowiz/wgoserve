@@ -58,7 +58,10 @@ func ensureFresh(endpoint string) {
 		// Nothing new, just retry.
 		return
 	}
-	q := getQueryJS()
+	q, err := getQueryJS()
+	if err != nil {
+		panic(err)
+	}
 	if version != q.Get(queryParam) {
 		q.Set(queryParam, version)
 		setQueryJS(q)
